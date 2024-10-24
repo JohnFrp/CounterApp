@@ -1,3 +1,4 @@
+import 'package:counter/model/tally_item.dart';
 import 'package:counter/provider/counter.provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -12,7 +13,7 @@ class TallyFullView extends StatefulWidget {
 class _TallyFullViewState extends State<TallyFullView> {
   String _getFormattedDateTime() {
     final now = DateTime.now();
-    final formattedTime = DateFormat('HH:mm').format(now); // Example: 21:06
+    final formattedTime = DateFormat('HH:mm').format(now);
 
     final bool isToday = now.day == DateTime.now().day &&
         now.month == DateTime.now().month &&
@@ -20,52 +21,50 @@ class _TallyFullViewState extends State<TallyFullView> {
 
     return isToday
         ? 'Updated: Today, $formattedTime'
-        : 'Updated: ${DateFormat('EEEE').format(now)}, $formattedTime'; // Example: Monday, 21:06
+        : 'Updated: ${DateFormat('EEEE').format(now)}, $formattedTime';
   }
 
   @override
   Widget build(BuildContext context) {
-    final countProvider =
-        ModalRoute.of(context)!.settings.arguments as CountProvider;
+    // Ensure proper typing for the arguments
+    final List<dynamic> args =
+        ModalRoute.of(context)!.settings.arguments as List<dynamic>;
+    final CountProvider provider = args[0];
+    final TallyItem item = args[1];
 
     return Scaffold(
-      appBar: _buildAppBar(countProvider),
-      body: _buildBody(countProvider),
+      appBar: _buildAppBar(item, provider),
+      body: _buildBody(item, provider),
       bottomNavigationBar: _buildBottomAppBar(),
     );
   }
 
-  AppBar _buildAppBar(CountProvider countProvider) {
+  AppBar _buildAppBar(TallyItem tallyItem, CountProvider provider) {
     return AppBar(
       title: const Text("Tallies"),
       actions: [
         IconButton(
           onPressed: () {
-            setState(() {
-              countProvider.resetCount();
-            });
+            provider.resetState(tallyItem);
+            setState(() {});
           },
-          icon: const Icon(Icons.menu_sharp),
+          icon: const Icon(Icons.refresh),
         ),
       ],
     );
   }
 
-  Widget _buildBody(CountProvider countProvider) {
+  Widget _buildBody(TallyItem tallyItem, CountProvider provider) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          countProvider.countUp();
-        });
-      },
-      onVerticalDragEnd: (details) {
-        _handleVerticalDrag(details, countProvider);
+        provider.incrementCounter(tallyItem);
+        setState(() {}); // Trigger UI update
       },
       child: Container(
         color: Colors.transparent,
         child: Center(
           child: Text(
-            '${countProvider.count}', // Display count
+            '${tallyItem.count}', // Display updated count
             style: const TextStyle(
               fontSize: 150,
               fontWeight: FontWeight.bold,
@@ -74,17 +73,6 @@ class _TallyFullViewState extends State<TallyFullView> {
         ),
       ),
     );
-  }
-
-  void _handleVerticalDrag(
-      DragEndDetails details, CountProvider countProvider) {
-    setState(() {
-      if (details.velocity.pixelsPerSecond.dy < 0) {
-        countProvider.countDown();
-      } else if (details.velocity.pixelsPerSecond.dy > 0) {
-        countProvider.countUp();
-      }
-    });
   }
 
   BottomAppBar _buildBottomAppBar() {
